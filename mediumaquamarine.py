@@ -11,7 +11,7 @@ def load_ftp_config(config_file):
         print(f"Failed to load config file: {e}")
         return None
 
-def transfer_folder_to_sftp(config_file, local_folder, remote_path):
+def transfer_folders_to_sftp(config_file, remote_path):
     config = load_ftp_config(config_file)
     if not config:
         print("Invalid configuration. Aborting.")
@@ -21,6 +21,7 @@ def transfer_folder_to_sftp(config_file, local_folder, remote_path):
     port = config.get("port", 22)
     username = config.get("username")
     password = config.get("password")
+    local_folders = config.get("folders", [])
 
     try:
         ssh = paramiko.SSHClient()
@@ -43,7 +44,7 @@ def transfer_folder_to_sftp(config_file, local_folder, remote_path):
         sftp.mkdir(remote_timestamped_path)
         print("Remote timestamped directory created.")
 
-        # Recursively upload the folder
+        # Recursively upload each folder
         def upload_dir(local_dir, remote_dir):
             for item in os.listdir(local_dir):
                 local_path = os.path.join(local_dir, item)
@@ -59,8 +60,9 @@ def transfer_folder_to_sftp(config_file, local_folder, remote_path):
                         print(f"Directory {remote_path} already exists.")
                     upload_dir(local_path, remote_path)
 
-        print(f"Transferring folder {local_folder} to {remote_timestamped_path}...")
-        upload_dir(local_folder, remote_timestamped_path)
+        for local_folder in local_folders:
+            print(f"Transferring folder {local_folder} to {remote_timestamped_path}...")
+            upload_dir(local_folder, remote_timestamped_path)
         print("Transfer complete.")
 
     except Exception as e:
@@ -71,7 +73,6 @@ def transfer_folder_to_sftp(config_file, local_folder, remote_path):
         ssh.close()
 
 config_file = "ftp_config.json"
-local_folder = "/var/www/html/jocarsa-lightsalmon"
 remote_path = "copiasdeseguridad"
 
-transfer_folder_to_sftp(config_file, local_folder, remote_path)
+transfer_folders_to_sftp(config_file, remote_path)
