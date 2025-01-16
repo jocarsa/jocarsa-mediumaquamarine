@@ -61,8 +61,17 @@ def transfer_folders_to_sftp(config_file, remote_path):
                     upload_dir(local_path, remote_path)
 
         for local_folder in local_folders:
-            print(f"Transferring folder {local_folder} to {remote_timestamped_path}...")
-            upload_dir(local_folder, remote_timestamped_path)
+            folder_name = os.path.basename(os.path.normpath(local_folder))
+            remote_folder_path = os.path.join(remote_timestamped_path, folder_name)
+            print(f"Creating subfolder for {folder_name}: {remote_folder_path}...")
+            try:
+                sftp.mkdir(remote_folder_path)
+            except IOError:
+                print(f"Subfolder {remote_folder_path} already exists.")
+
+            print(f"Transferring contents of {local_folder} to {remote_folder_path}...")
+            upload_dir(local_folder, remote_folder_path)
+
         print("Transfer complete.")
 
     except Exception as e:
