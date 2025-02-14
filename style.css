@@ -1,0 +1,99 @@
+/* style.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f1f1f1;
+}
+
+.header {
+    background: #23282d;
+    color: #fff;
+    padding: 10px;
+}
+
+.sidebar {
+    float: left;
+    width: 200px;
+    background: #333;
+    height: 100vh;
+    padding-top: 20px;
+}
+
+.sidebar a {
+    display: block;
+    color: #ccc;
+    padding: 10px;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+    background: #444;
+    color: #fff;
+}
+
+.content {
+    margin-left: 210px;
+    padding: 20px;
+    background: #fff;
+    min-height: calc(100vh - 20px);
+}
+
+.login-container {
+    width: 300px;
+    margin: 100px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+.error {
+    color: red;
+}
+
+.progress {
+    width: 100%;
+    background: #ddd;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background: #4caf50;
+    border-radius: 3px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table, th, td {
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+a {
+    color: #0073aa;
+}
+
+a:hover {
+    color: #00a0d2;
+}
+
