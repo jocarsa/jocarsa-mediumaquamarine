@@ -101,7 +101,7 @@ def transfer_folders_to_sftp(config_file, remote_path):
             # Bloque de progreso
             line1 = f"\033[92mArchivo: {uploaded} de {total}\033[0m"
             line2 = f"\033[94mPorcentaje: {percentage:.2f}%\033[0m"
-            line3 = f"\033[96mBarra de progreso: [{bar}]\033[0m"
+            line3 = f"\033[96m[{bar}]\033[0m"
             line4 = f"\033[93mTiempo transcurrido: {elapsed_str}\033[0m"
             line5 = f"\033[91mTiempo estimado restante: {remaining_str}\033[0m"
 
