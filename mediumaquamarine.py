@@ -59,7 +59,7 @@ def transfer_folders_to_sftp(config_file, remote_path):
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        print(f"Conectando a {hostname}:{port}...")
+        #print(f"Conectando a {hostname}:{port}...")
         ssh.connect(hostname, port=port, username=username, password=password)
         print("Conexión establecida.")
 
