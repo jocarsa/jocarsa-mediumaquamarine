@@ -9,7 +9,7 @@ PROGRESS_FILE = "progress.txt"
 LOG_FILE = "backup_log.json"  # (Opcional) archivo de log para detalles del respaldo
 
 # Lista de carpetas a excluir del proceso de respaldo
-EXCLUDE_FOLDERS = [".git", "myphp", "node_modules","josevicentecarratala.com"]
+EXCLUDE_FOLDERS = [".git", "myphp", "node_modules", "josevicentecarratala.com"]
 
 def load_ftp_config(config_file):
     try:
@@ -59,7 +59,6 @@ def transfer_folders_to_sftp(config_file, remote_path):
     try:
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #print(f"Conectando a {hostname}:{port}...")
         ssh.connect(hostname, port=port, username=username, password=password)
         print("Conexión establecida.")
 
@@ -79,7 +78,15 @@ def transfer_folders_to_sftp(config_file, remote_path):
         # Registrar el tiempo de inicio
         start_time = time.time()
 
+        # Animación de “dos contenedores” (uno lleno a la izquierda y otro vacío a la derecha)
+        # y un "pipe" por donde viajan los "paquetes".
+        # Mantendremos un índice de cuadro para animar el "pipe".
+        pipe_index = 0
+        pipe_length = 12  # longitud del "pipe"
+
         def update_progress(uploaded, total):
+            nonlocal pipe_index
+
             elapsed_time = time.time() - start_time
             avg_time = elapsed_time / uploaded if uploaded > 0 else 0
             remaining_files = total - uploaded
@@ -88,6 +95,8 @@ def transfer_folders_to_sftp(config_file, remote_path):
             elapsed_str = format_time(elapsed_time)
             remaining_str = format_time(est_remaining_time)
             percentage = (uploaded / total) * 100 if total else 100
+
+            # Progreso en barra tradicional
             progress_bar_length = 50
             filled_length = int(progress_bar_length * uploaded // total) if total > 0 else progress_bar_length
             bar = '█' * filled_length + '-' * (progress_bar_length - filled_length)
@@ -98,21 +107,44 @@ def transfer_folders_to_sftp(config_file, remote_path):
             welcome_line3 = "(c) 2025 JOCARSA"
             welcome_line4 = "\033[92mComenzando copia de seguridad...\033[0m"
 
-            # Bloque de progreso
+            # Líneas de progreso estándar
             line1 = f"\033[92mArchivo: {uploaded} de {total}\033[0m"
             line2 = f"\033[94mPorcentaje: {percentage:.2f}%\033[0m"
             line3 = f"\033[96m[{bar}]\033[0m"
             line4 = f"\033[93mTiempo transcurrido: {elapsed_str}\033[0m"
             line5 = f"\033[91mTiempo estimado restante: {remaining_str}\033[0m"
 
+            # Construir animación de contenedores y pipe
+            # Contenedor izquierdo (siempre lleno de 10/10)
+            left_container = "██████████"
+
+            # Contenedor derecho (se llena 1/10 cada 10%)
+            filled_right = int(percentage // 10)
+            right_container = "█" * filled_right + "." * (10 - filled_right)
+
+            # Actualizar pipe_index para la animación
+            pipe_index = (pipe_index + 1) % pipe_length
+
+            # Construir la animación del “pipe” con un solo “o” que se mueve
+            pipe_chars = ["-"] * pipe_length
+            pipe_chars[pipe_index] = "o"
+            pipe_str = "".join(pipe_chars)
+
+            # Estructura: [left_container] |pipe| [right_container]
+            # Ejemplo: [██████████] --o------ [██........]
+            containers_line = f"[{left_container}] {pipe_str} [{right_container}]"
+
             # Limpiar la pantalla y reimprimir toda la información
             clear_screen()
             sys.stdout.write(f"{welcome_line1}\n{welcome_line2}\n{welcome_line3}\n{welcome_line4}\n\n")
-            sys.stdout.write(f"{line1}\n{line2}\n{line3}\n{line4}\n{line5}\n")
+            sys.stdout.write(f"{line1}\n{line2}\n{line3}\n{line4}\n{line5}\n\n")
+            sys.stdout.write(f"{containers_line}\n")
             sys.stdout.flush()
 
+            # Guardar el porcentaje en un archivo de progreso
             with open(PROGRESS_FILE, "w") as pf:
                 pf.write(str(percentage))
+
             return percentage
 
         def upload_dir(local_dir, remote_dir):
