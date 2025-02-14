@@ -33,6 +33,11 @@ def format_time(seconds):
     h, m = divmod(m, 60)
     return f"{h:02}:{m:02}:{s:02}"
 
+def clear_screen():
+    """Limpia la pantalla y posiciona el cursor en la esquina superior izquierda."""
+    sys.stdout.write("\033[2J\033[H")
+    sys.stdout.flush()
+
 def transfer_folders_to_sftp(config_file, remote_path):
     config = load_ftp_config(config_file)
     if not config:
@@ -45,7 +50,7 @@ def transfer_folders_to_sftp(config_file, remote_path):
     password = config.get("password")
     local_folders = config.get("folders", [])
 
-    # Calcular el número total de archivos a subir (para el seguimiento del progreso)
+    # Calcular el número total de archivos a subir (para seguimiento de progreso)
     total_files = 0
     for folder in local_folders:
         total_files += count_files_in_dir(folder)
@@ -68,16 +73,13 @@ def transfer_folders_to_sftp(config_file, remote_path):
             sftp.mkdir(remote_path)
         except IOError:
             print(f"El directorio base remoto '{remote_path}' ya existe.")
-
         sftp.mkdir(remote_timestamped_path)
         print("Directorio remoto con marca de tiempo creado.")
 
-        # Registrar el tiempo de inicio para el seguimiento
+        # Registrar el tiempo de inicio
         start_time = time.time()
-        first_progress_update = True  # Bandera para la primera actualización
 
         def update_progress(uploaded, total):
-            nonlocal first_progress_update
             elapsed_time = time.time() - start_time
             avg_time = elapsed_time / uploaded if uploaded > 0 else 0
             remaining_files = total - uploaded
@@ -85,32 +87,33 @@ def transfer_folders_to_sftp(config_file, remote_path):
 
             elapsed_str = format_time(elapsed_time)
             remaining_str = format_time(est_remaining_time)
-
             percentage = (uploaded / total) * 100 if total else 100
             progress_bar_length = 50
             filled_length = int(progress_bar_length * uploaded // total) if total > 0 else progress_bar_length
             bar = '█' * filled_length + '-' * (progress_bar_length - filled_length)
 
-            # Construir las líneas de progreso con colores ANSI
+            # Mensaje de bienvenida
+            # Se utiliza código ANSI extendido para "mediumaquamarine" (si la terminal lo soporta)
+            welcome_line1 = "\033[38;5;79mjocarsa | mediumaquamarine\033[0m"
+            welcome_line2 = "Programa de copia de seguridad (c) 2025 JOCARSA - Jose Vicente Carratala Sanchis"
+            welcome_line3 = "\033[92mComenzando copia de seguridad...\033[0m"
+
+            # Bloque de progreso
             line1 = f"\033[92mArchivo: {uploaded} de {total}\033[0m"
             line2 = f"\033[94mPorcentaje: {percentage:.2f}%\033[0m"
             line3 = f"\033[96mBarra de progreso: [{bar}]\033[0m"
             line4 = f"\033[93mTiempo transcurrido: {elapsed_str}\033[0m"
             line5 = f"\033[91mTiempo estimado restante: {remaining_str}\033[0m"
-            progress_message = f"{line1}\n{line2}\n{line3}\n{line4}\n{line5}\n"
-            
-            # Guardar el porcentaje en el archivo de progreso (si es necesario para otros procesos)
+
+            # Limpiar la pantalla y volver a imprimir toda la información
+            clear_screen()
+            sys.stdout.write(f"{welcome_line1}\n{welcome_line2}\n{welcome_line3}\n\n")
+            sys.stdout.write(f"{line1}\n{line2}\n{line3}\n{line4}\n{line5}\n")
+            sys.stdout.flush()
+
             with open(PROGRESS_FILE, "w") as pf:
                 pf.write(str(percentage))
-            
-            # Si no es la primera actualización, mover el cursor 6 líneas hacia arriba para sobrescribir
-            if not first_progress_update:
-                sys.stdout.write("\033[F" * 6)
-            else:
-                first_progress_update = False
-
-            sys.stdout.write(progress_message)
-            sys.stdout.flush()
+            return percentage
 
         def upload_dir(local_dir, remote_dir):
             nonlocal uploaded_files
@@ -122,7 +125,6 @@ def transfer_folders_to_sftp(config_file, remote_path):
                 local_path = os.path.join(local_dir, item)
                 remote_item_path = os.path.join(remote_dir, item)
                 if os.path.isfile(local_path):
-                    # Subir el archivo
                     sftp.put(local_path, remote_item_path)
                     uploaded_files += 1
                     update_progress(uploaded_files, total_files)
@@ -133,7 +135,7 @@ def transfer_folders_to_sftp(config_file, remote_path):
                         pass
                     upload_dir(local_path, remote_item_path)
 
-        # Para cada carpeta local, crear la subcarpeta correspondiente y comenzar la subida
+        # Subir cada carpeta local
         for local_folder in local_folders:
             folder_name = os.path.basename(os.path.normpath(local_folder))
             remote_folder_path = os.path.join(remote_timestamped_path, folder_name)
@@ -146,9 +148,9 @@ def transfer_folders_to_sftp(config_file, remote_path):
             print(f"Transfiriendo el contenido de {local_folder} a {remote_folder_path}...")
             upload_dir(local_folder, remote_folder_path)
 
-        print("\nTransferencia completada.")
+        clear_screen()
+        print("Transferencia completada.\n")
 
-        # Registrar los detalles del respaldo (opcional)
         backup_record = {
             "timestamp": timestamp,
             "total_files": total_files,
