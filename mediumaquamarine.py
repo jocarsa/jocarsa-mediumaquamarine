@@ -9,7 +9,7 @@ PROGRESS_FILE = "progress.txt"
 LOG_FILE = "backup_log.json"  # (Optional) log file for backup details
 
 # List of folder names to exclude from the backup process
-EXCLUDE_FOLDERS = [".git", "myphp", "node_modules"]
+EXCLUDE_FOLDERS = [".git", "myphp", "node_modules","josevicentecarratala.com"]
 
 def load_ftp_config(config_file):
     try:
