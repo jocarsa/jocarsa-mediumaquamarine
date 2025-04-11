@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 import sys
 import time
+import subprocess
 
 PROGRESS_FILE = "progress.txt"
 LOG_FILE = "backup_log.json"  # (Opcional) archivo de log para detalles del respaldo
@@ -17,6 +18,14 @@ def load_ftp_config(config_file):
             return json.load(file)
     except Exception as e:
         print(f"Error al cargar el archivo de configuración: {e}")
+        return None
+
+def load_db_config(config_file):
+    try:
+        with open(config_file, 'r') as file:
+            return json.load(file)
+    except Exception as e:
+        print(f"Error al cargar el archivo de configuración de la base de datos: {e}")
         return None
 
 def count_files_in_dir(local_dir):
@@ -38,7 +47,32 @@ def clear_screen():
     sys.stdout.write("\033[2J\033[H")
     sys.stdout.flush()
 
-def transfer_folders_to_sftp(config_file, remote_path):
+def dump_mysql_databases(db_config, output_dir):
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        host = db_config.get("host")
+        port = db_config.get("port")
+        user = db_config.get("user")
+        password = db_config.get("password")
+        databases = db_config.get("databases", [])
+
+        for db in databases:
+            dump_command = [
+                "mysqldump",
+                "--host", host,
+                "--port", str(port),
+                "--user", user,
+                "--password", password,
+                "--databases", db,
+                "--events", "--routines", "--triggers",
+                "--result-file", os.path.join(output_dir, f"{db}.sql")
+            ]
+            subprocess.run(dump_command, check=True)
+            print(f"Dumped database {db} to {output_dir}/{db}.sql")
+    except Exception as e:
+        print(f"Error dumping MySQL databases: {e}")
+
+def transfer_folders_to_sftp(config_file, remote_path, db_config_file):
     config = load_ftp_config(config_file)
     if not config:
         print("Configuración inválida. Abortando.")
@@ -49,6 +83,13 @@ def transfer_folders_to_sftp(config_file, remote_path):
     username = config.get("username")
     password = config.get("password")
     local_folders = config.get("folders", [])
+
+    # Dump MySQL databases
+    db_config = load_db_config(db_config_file)
+    if db_config:
+        mysql_dump_dir = "mysql"
+        dump_mysql_databases(db_config, mysql_dump_dir)
+        local_folders.append(mysql_dump_dir)
 
     # Calcular el número total de archivos a subir (para seguimiento de progreso)
     total_files = 0
@@ -204,6 +245,7 @@ def transfer_folders_to_sftp(config_file, remote_path):
 
 if __name__ == "__main__":
     config_file = "ftp_config.json"
+    db_config_file = "db_config.json"
     remote_path = "copiasdeseguridad"
-    transfer_folders_to_sftp(config_file, remote_path)
+    transfer_folders_to_sftp(config_file, remote_path, db_config_file)
 

@@ -1,0 +1,8 @@
+{
+    "host": "sample_database_host",
+    "port": 3306,
+    "user": "sample_database_user",
+    "password": "sample_database_password",
+    "databases": ["sample_db1", "sample_db2"]  // List of databases to dump
+}
+
